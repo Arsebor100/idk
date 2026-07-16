@@ -9,68 +9,78 @@ screenGui.Name = "PlayerListGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local TweenService = game:GetService("TweenService")
-
 local intro = Instance.new("Frame")
 intro.Size = UDim2.fromScale(1,1)
 intro.BackgroundColor3 = Color3.fromRGB(0,0,0)
-intro.BackgroundTransparency = 1
-intro.ZIndex = 999
+intro.BackgroundTransparency = 0
+intro.ZIndex = 9999
 intro.Parent = screenGui
 
-local flash = Instance.new("Frame")
-flash.Size = UDim2.fromScale(1,1)
-flash.BackgroundColor3 = Color3.fromRGB(120,0,0)
-flash.BackgroundTransparency = 1
-flash.ZIndex = 1000
-flash.Parent = intro
+local glow = Instance.new("Frame")
+glow.AnchorPoint = Vector2.new(0.5,0.5)
+glow.Position = UDim2.fromScale(0.5,0.5)
+glow.Size = UDim2.new(0,0,0,4)
+glow.BackgroundColor3 = Color3.fromRGB(255,0,0)
+glow.BorderSizePixel = 0
+glow.ZIndex = 10000
+glow.Parent = intro
+
+local glowCorner = Instance.new("UICorner")
+glowCorner.CornerRadius = UDim.new(1,0)
+glowCorner.Parent = glow
 
 local text = Instance.new("TextLabel")
 text.AnchorPoint = Vector2.new(0.5,0.5)
 text.Position = UDim2.fromScale(0.5,0.5)
-text.Size = UDim2.new(0,500,0,70)
+text.Size = UDim2.new(0,500,0,60)
 text.BackgroundTransparency = 1
 text.Text = "Created by @arsebor100"
+text.TextColor3 = Color3.fromRGB(255,35,35)
+text.TextTransparency = 1
 text.Font = Enum.Font.GothamBlack
 text.TextScaled = true
-text.TextColor3 = Color3.fromRGB(255,40,40)
-text.TextTransparency = 1
-text.ZIndex = 1001
+text.ZIndex = 10001
 text.Parent = intro
 
 local stroke = Instance.new("UIStroke")
 stroke.Color = Color3.fromRGB(255,0,0)
-stroke.Thickness = 1.5
+stroke.Thickness = 2
 stroke.Transparency = 1
 stroke.Parent = text
 
-TweenService:Create(flash,TweenInfo.new(0.15),{
-	BackgroundTransparency = 0.7
+TweenService:Create(glow,TweenInfo.new(0.35,Enum.EasingStyle.Quart),{
+    Size = UDim2.new(0,650,0,4)
 }):Play()
 
-TweenService:Create(text,TweenInfo.new(0.35,Enum.EasingStyle.Quart),{
-	TextTransparency = 0
+task.wait(0.1)
+
+TweenService:Create(text,TweenInfo.new(0.25),{
+    TextTransparency = 0
 }):Play()
 
-TweenService:Create(stroke,TweenInfo.new(0.35),{
-	Transparency = 0
+TweenService:Create(stroke,TweenInfo.new(0.25),{
+    Transparency = 0
 }):Play()
 
-task.wait(0.8)
+task.wait(1)
 
-TweenService:Create(flash,TweenInfo.new(0.35),{
-	BackgroundTransparency = 1
+TweenService:Create(text,TweenInfo.new(0.3),{
+    TextTransparency = 1
 }):Play()
 
-TweenService:Create(text,TweenInfo.new(0.35),{
-	TextTransparency = 1
+TweenService:Create(stroke,TweenInfo.new(0.3),{
+    Transparency = 1
 }):Play()
 
-TweenService:Create(stroke,TweenInfo.new(0.35),{
-	Transparency = 1
+TweenService:Create(glow,TweenInfo.new(0.3),{
+    BackgroundTransparency = 1
 }):Play()
 
-task.wait(0.4)
+TweenService:Create(intro,TweenInfo.new(0.35),{
+    BackgroundTransparency = 1
+}):Play()
+
+task.wait(0.35)
 intro:Destroy()
 
 local mainFrame = Instance.new("Frame")
