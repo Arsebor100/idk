@@ -10,14 +10,22 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 local splash = Instance.new("TextLabel")
-splash.Size = UDim2.new(1, 0, 1, 0)
+splash.Size = UDim2.new(0, 200, 0, 40)
+splash.Position = UDim2.new(0.5, -100, 1, -60)
 splash.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 splash.TextColor3 = Color3.fromRGB(255, 255, 255)
-splash.Text = "Created by @arsebor100"
+splash.Text = "@arsebor100"
 splash.Font = Enum.Font.SourceSansBold
-splash.TextSize = 30
+splash.TextSize = 18
+splash.BackgroundTransparency = 1
+splash.TextTransparency = 1
 splash.Parent = screenGui
 
+local splashCorner = Instance.new("UICorner")
+splashCorner.CornerRadius = UDim.new(0, 8)
+splashCorner.Parent = splash
+
+TweenService:Create(splash, TweenInfo.new(0.5), {BackgroundTransparency = 0, TextTransparency = 0}):Play()
 task.wait(2)
 TweenService:Create(splash, TweenInfo.new(0.5), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
 task.wait(0.5)
