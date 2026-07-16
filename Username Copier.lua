@@ -9,7 +9,46 @@ screenGui.Name = "PlayerListGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-screenGui.Parent = playerGui
+local credit = Instance.new("TextLabel")
+credit.Size = UDim2.new(0, 170, 0, 24)
+credit.Position = UDim2.new(0.5, -85, 1, -40)
+credit.AnchorPoint = Vector2.new(0.5, 0)
+credit.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+credit.BackgroundTransparency = 1
+credit.TextTransparency = 1
+credit.Text = "Created by @arsebor100"
+credit.TextColor3 = Color3.fromRGB(255, 255, 255)
+credit.Font = Enum.Font.SourceSansBold
+credit.TextSize = 13
+credit.Parent = screenGui
+
+local creditCorner = Instance.new("UICorner")
+creditCorner.CornerRadius = UDim.new(1, 0)
+creditCorner.Parent = credit
+
+TweenService:Create(
+    credit,
+    TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+    {
+        BackgroundTransparency = 0,
+        TextTransparency = 0
+    }
+):Play()
+
+task.delay(2.5, function()
+    local tween = TweenService:Create(
+        credit,
+        TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
+        {
+            BackgroundTransparency = 1,
+            TextTransparency = 1
+        }
+    )
+    tween:Play()
+    tween.Completed:Connect(function()
+        credit:Destroy()
+    end)
+end)
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 0, 0, 0)
