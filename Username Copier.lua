@@ -9,6 +9,20 @@ screenGui.Name = "PlayerListGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
+local splash = Instance.new("TextLabel")
+splash.Size = UDim2.new(1, 0, 1, 0)
+splash.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+splash.TextColor3 = Color3.fromRGB(255, 255, 255)
+splash.Text = "Created by @arsebor100"
+splash.Font = Enum.Font.SourceSansBold
+splash.TextSize = 30
+splash.Parent = screenGui
+
+task.wait(2)
+TweenService:Create(splash, TweenInfo.new(0.5), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
+task.wait(0.5)
+splash:Destroy()
+
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 0, 0, 0)
 mainFrame.Position = UDim2.new(0.5, -160, 0.3, -210)
