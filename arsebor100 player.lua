@@ -1,299 +1,173 @@
--- 🔥 ULTIMATE RED MUSIC PLAYER v2 для Delta 🔥
--- Последняя версия — сделал максимально красиво
-
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local SoundService = game:GetService("SoundService")
+local HttpService = game:GetService("HttpService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
-if playerGui:FindFirstChild("RedMusicPro") then
-    playerGui.RedMusicPro:Destroy()
+local guiName = "DeltaRedPlayer"
+if CoreGui:FindFirstChild(guiName) then
+    CoreGui[guiName]:Destroy()
 end
 
-local sg = Instance.new("ScreenGui")
-sg.Name = "RedMusicPro"
-sg.ResetOnSpawn = false
-sg.Parent = playerGui
+local gui = Instance.new("ScreenGui")
+gui.Name = guiName
+gui.Parent = CoreGui
 
-local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 460, 0, 580)
-main.Position = UDim2.new(0.5, -230, 0.5, -290)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-main.BorderSizePixel = 0
-main.Parent = sg
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 150)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 5, 5)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = gui
+Instance.new("UICorner", mainFrame)
 
-local mainCorner = Instance.new("UICorner", main)
-mainCorner.CornerRadius = UDim.new(0, 20)
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(200, 0, 0)
+stroke.Thickness = 2
+stroke.Parent = mainFrame
 
-local mainStroke = Instance.new("UIStroke", main)
-mainStroke.Color = Color3.fromRGB(220, 20, 60)
-mainStroke.Thickness = 2.5
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Parent = mainFrame
+Instance.new("UICorner", closeBtn)
 
--- Title Bar
-local title = Instance.new("Frame", main)
-title.Size = UDim2.new(1, 0, 0, 55)
-title.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
-title.Parent = main
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 30, 0, 30)
+minBtn.Position = UDim2.new(1, -70, 0, 5)
+minBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+minBtn.Text = "-"
+minBtn.TextColor3 = Color3.new(1, 1, 1)
+minBtn.Parent = mainFrame
+Instance.new("UICorner", minBtn)
 
-Instance.new("UICorner", title).CornerRadius = UDim.new(0, 20)
+local idBox = Instance.new("TextBox")
+idBox.Size = UDim2.new(0, 180, 0, 30)
+idBox.Position = UDim2.new(0, 10, 0, 40)
+idBox.BackgroundColor3 = Color3.fromRGB(50, 10, 10)
+idBox.TextColor3 = Color3.new(1, 1, 1)
+idBox.PlaceholderText = "Audio ID"
+idBox.Parent = mainFrame
 
-local titleText = Instance.new("TextLabel", title)
-titleText.Size = UDim2.new(1, -140, 1, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "🔥 RED MUSIC PRO"
-titleText.TextColor3 = Color3.fromRGB(255, 70, 70)
-titleText.Font = Enum.Font.GothamBlack
-titleText.TextSize = 22
-titleText.TextXAlignment = Enum.TextXAlignment.Left
+local addBtn = Instance.new("TextButton")
+addBtn.Size = UDim2.new(0, 40, 0, 30)
+addBtn.Position = UDim2.new(0, 200, 0, 40)
+addBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+addBtn.Text = "ADD"
+addBtn.TextColor3 = Color3.new(1, 1, 1)
+addBtn.Parent = mainFrame
+Instance.new("UICorner", addBtn)
 
--- Кнопки окна
-local minBtn = Instance.new("TextButton", title)
-minBtn.Size = UDim2.new(0,45,0,45)
-minBtn.Position = UDim2.new(1,-95,0,5)
-minBtn.BackgroundTransparency = 1
-minBtn.Text = "−"
-minBtn.TextColor3 = Color3.fromRGB(255,200,200)
-minBtn.TextSize = 30
+local playBtn = Instance.new("TextButton")
+playBtn.Size = UDim2.new(0, 40, 0, 30)
+playBtn.Position = UDim2.new(0, 245, 0, 40)
+playBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+playBtn.Text = "PLAY"
+playBtn.TextColor3 = Color3.new(1, 1, 1)
+playBtn.Parent = mainFrame
+Instance.new("UICorner", playBtn)
 
-local closeBtn = Instance.new("TextButton", title)
-closeBtn.Size = UDim2.new(0,45,0,45)
-closeBtn.Position = UDim2.new(1,-45,0,5)
-closeBtn.BackgroundTransparency = 1
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(255, 60, 60)
-closeBtn.TextSize = 28
-
--- Визуализатор
-local viz = Instance.new("Frame", main)
-viz.Size = UDim2.new(1, -40, 0, 140)
-viz.Position = UDim2.new(0,20,0,70)
-viz.BackgroundColor3 = Color3.fromRGB(8,8,8)
-viz.Parent = main
-Instance.new("UICorner", viz).CornerRadius = UDim.new(0,16)
+local visFrame = Instance.new("Frame")
+visFrame.Size = UDim2.new(0, 280, 0, 60)
+visFrame.Position = UDim2.new(0, 10, 0, 80)
+visFrame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+visFrame.Parent = mainFrame
 
 local bars = {}
-for i = 1, 48 do
-    local b = Instance.new("Frame", viz)
-    b.Size = UDim2.new(0, 6, 0, 30)
-    b.Position = UDim2.new(0, 12 + (i-1)*8.5, 1, -35)
-    b.BackgroundColor3 = Color3.fromRGB(255, 45 + i*3, 45 + i*2)
-    b.BorderSizePixel = 0
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0,3)
-    table.insert(bars, b)
+for i = 1, 14 do
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0, 15, 0, 5)
+    bar.Position = UDim2.new(0, (i - 1) * 20, 1, -5)
+    bar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    bar.AnchorPoint = Vector2.new(0, 1)
+    bar.Parent = visFrame
+    table.insert(bars, bar)
 end
 
--- Плейлист
-local scroll = Instance.new("ScrollingFrame", main)
-scroll.Size = UDim2.new(1, -40, 0, 210)
-scroll.Position = UDim2.new(0,20,0,225)
-scroll.BackgroundTransparency = 1
-scroll.ScrollBarThickness = 5
-scroll.Parent = main
+local audio = Instance.new("Sound")
+audio.Parent = CoreGui
 
-local layout = Instance.new("UIListLayout", scroll)
-layout.Padding = UDim.new(0,6)
+local fileName = "delta_music.json"
+local savedSongs = {}
 
--- Управление
-local controls = Instance.new("Frame", main)
-controls.Size = UDim2.new(1,-40,0,140)
-controls.Position = UDim2.new(0,20,1,-160)
-controls.BackgroundTransparency = 1
-controls.Parent = main
-
--- ID + Add
-local idInput = Instance.new("TextBox", controls)
-idInput.Size = UDim2.new(0.65,0,0,38)
-idInput.Position = UDim2.new(0,0,0,0)
-idInput.PlaceholderText = "Вставь ID песни..."
-idInput.BackgroundColor3 = Color3.fromRGB(25,25,25)
-idInput.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", idInput).CornerRadius = UDim.new(0,10)
-
-local add = Instance.new("TextButton", controls)
-add.Size = UDim2.new(0.32,0,0,38)
-add.Position = UDim2.new(0.68,0,0,0)
-add.BackgroundColor3 = Color3.fromRGB(180,0,0)
-add.Text = "Добавить"
-add.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", add).CornerRadius = UDim.new(0,10)
-
--- Кнопки плеера
-local prev = Instance.new("TextButton", controls)
-prev.Size = UDim2.new(0,55,0,55)
-prev.Position = UDim2.new(0.1,0,0.35,0)
-prev.BackgroundColor3 = Color3.fromRGB(40,0,0)
-prev.Text = "⏮"
-prev.TextSize = 32
-
-local play = Instance.new("TextButton", controls)
-play.Size = UDim2.new(0,80,0,80)
-play.Position = UDim2.new(0.5,-40,0.25,0)
-play.BackgroundColor3 = Color3.fromRGB(220, 20, 60)
-play.Text = "▶"
-play.TextSize = 42
-
-local nextb = Instance.new("TextButton", controls)
-nextb.Size = UDim2.new(0,55,0,55)
-nextb.Position = UDim2.new(0.75,0,0.35,0)
-nextb.BackgroundColor3 = Color3.fromRGB(40,0,0)
-nextb.Text = "⏭"
-nextb.TextSize = 32
-
--- Мини-плеер (при сворачивании)
-local mini = Instance.new("Frame", sg)
-mini.Size = UDim2.new(0, 380, 0, 70)
-mini.Position = UDim2.new(0.5, -190, 1, -90)
-mini.BackgroundColor3 = Color3.fromRGB(20,0,0)
-mini.Visible = false
-Instance.new("UICorner", mini).CornerRadius = UDim.new(0,16)
-
-local miniViz = Instance.new("Frame", mini) -- маленький визуализатор
-miniViz.Size = UDim2.new(0, 120, 0, 50)
-miniViz.Position = UDim2.new(0,15,0.5,-25)
-miniViz.BackgroundTransparency = 1
-
--- Логика
-local sound = Instance.new("Sound", SoundService)
-sound.Looped = true
-sound.Volume = 0.8
-
-local playlist = getgenv().RedPlaylist or {}
-getgenv().RedPlaylist = playlist
-local index = 1
-local minimized = false
-local shuffle = false
-local loop = true
-
-local function savePlaylist()
-    getgenv().RedPlaylist = playlist
+if isfile and readfile then
+    if isfile(fileName) then
+        local data = readfile(fileName)
+        local success, decoded = pcall(function() return HttpService:JSONDecode(data) end)
+        if success and type(decoded) == "table" then
+            savedSongs = decoded
+        end
+    end
 end
 
-local function updatePlaylist()
-    for _,v in pairs(scroll:GetChildren()) do
-        if v:IsA("TextButton") then v:Destroy() end
+local function saveMemory()
+    if writefile then
+        writefile(fileName, HttpService:JSONEncode(savedSongs))
     end
-    for i, song in ipairs(playlist) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, -10, 0, 42)
-        btn.BackgroundColor3 = (i == index) and Color3.fromRGB(140,0,0) or Color3.fromRGB(35,35,35)
-        btn.Text = "  ".. (song.name or "Song "..i) .. "  |  " .. song.id
-        btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.Parent = scroll
-        btn.MouseButton1Click:Connect(function()
-            index = i
-            playCurrent()
-        end)
-    end
-    scroll.CanvasSize = UDim2.new(0,0,0,#playlist*48)
 end
 
-local function playCurrent()
-    if #playlist == 0 then return end
-    local s = playlist[index]
-    sound.SoundId = "rbxassetid://" .. s.id
-    sound:Play()
-    play.Text = "⏸"
-    updatePlaylist()
-end
-
--- Визуализатор
-RunService.RenderStepped:Connect(function()
-    if not sound.IsPlaying then return end
-    local loud = sound.PlaybackLoudness / 380
-    for i, bar in ipairs(bars) do
-        local h = 25 + math.random(10,110) * loud + math.sin(tick()*8 + i)*15
-        TweenService:Create(bar, TweenInfo.new(0.1), {Size = UDim2.new(0,6,0,math.clamp(h,15,135))}):Play()
+addBtn.MouseButton1Click:Connect(function()
+    local val = idBox.Text
+    if tonumber(val) then
+        table.insert(savedSongs, val)
+        saveMemory()
+        idBox.Text = ""
     end
 end)
 
--- Кнопки
-add.MouseButton1Click:Connect(function()
-    local id = idInput.Text:match("%d+")
-    if id then
-        table.insert(playlist, {id = id, name = "Song "..(#playlist+1)})
-        savePlaylist()
-        updatePlaylist()
-        if #playlist == 1 then playCurrent() end
-        idInput.Text = ""
-    end
-end)
-
-play.MouseButton1Click:Connect(function()
-    if sound.IsPlaying then
-        sound:Pause()
-        play.Text = "▶"
-    else
-        sound:Resume()
-        play.Text = "⏸"
-    end
-end)
-
-nextb.MouseButton1Click:Connect(function()
-    if shuffle then
-        index = math.random(1,#playlist)
-    else
-        index = index % #playlist + 1
-    end
-    playCurrent()
-end)
-
-prev.MouseButton1Click:Connect(function()
-    index = index - 1
-    if index < 1 then index = #playlist end
-    playCurrent()
-end)
-
-minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {Size = UDim2.new(0,460,0,80)}):Play()
-        scroll.Visible = false
-        controls.Visible = false
-        viz.Visible = false
-        mini.Visible = true
-    else
-        TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {Size = UDim2.new(0,460,0,580)}):Play()
-        scroll.Visible = true
-        controls.Visible = true
-        viz.Visible = true
-        mini.Visible = false
+playBtn.MouseButton1Click:Connect(function()
+    local val = idBox.Text
+    if tonumber(val) then
+        audio.SoundId = "rbxassetid://" .. val
+        audio:Play()
+        playBtn.Text = "PAUSE"
+    elseif audio.IsPlaying then
+        audio:Pause()
+        playBtn.Text = "PLAY"
+    elseif audio.TimePosition > 0 then
+        audio:Resume()
+        playBtn.Text = "PAUSE"
+    elseif #savedSongs > 0 then
+        audio.SoundId = "rbxassetid://" .. savedSongs[math.random(1, #savedSongs)]
+        audio:Play()
+        playBtn.Text = "PAUSE"
     end
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    sg:Destroy()
-    sound:Stop()
-    print("Red Music Pro закрыт.")
+    audio:Destroy()
+    gui:Destroy()
 end)
 
--- Drag
-local dragging, dragStart, startPos
-title.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = inp.Position
-        startPos = main.Position
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        mainFrame.Size = UDim2.new(0, 300, 0, 40)
+        idBox.Visible = false
+        addBtn.Visible = false
+        playBtn.Visible = false
+        visFrame.Position = UDim2.new(0, 10, 0, 5)
+        visFrame.Size = UDim2.new(0, 200, 0, 30)
+    else
+        mainFrame.Size = UDim2.new(0, 300, 0, 150)
+        idBox.Visible = true
+        addBtn.Visible = true
+        playBtn.Visible = true
+        visFrame.Position = UDim2.new(0, 10, 0, 80)
+        visFrame.Size = UDim2.new(0, 280, 0, 60)
     end
 end)
 
-title.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
-UserInputService.InputChanged:Connect(function(inp)
-    if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = inp.Position - dragStart
-        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+RunService.RenderStepped:Connect(function()
+    if audio and audio.Parent then
+        local loudness = audio.PlaybackLoudness
+        local maxHeight = visFrame.Size.Y.Offset - 5
+        for i, bar in ipairs(bars) do
+            local factor = math.clamp((loudness / 1000) * (math.random(50, 150) / 100), 0, 1)
+            bar.Size = UDim2.new(0, 15, 0, math.max(5, maxHeight * factor))
+        end
     end
 end)
-
--- Инициализация
-updatePlaylist()
-if #playlist > 0 then playCurrent() end
-
-print("✅ ULTIMATE RED MUSIC PLAYER ЗАГРУЖЕН. Наслаждайся, брат.")
