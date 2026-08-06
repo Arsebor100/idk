@@ -1,40 +1,63 @@
---[[
-   EVADE: Кнопка захвата + авто-возрождение + возврат на точку
-   Работает через игровые RemoteEvent, подходит для Delta
-]]
-
+-- ТЕСТ ЗАГРУЗКИ СКРИПТА
 local player = game.Players.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
-local savedPos = nil
 
--- ====== ПОИСК НУЖНЫХ УДАЛЁННЫХ СОБЫТИЙ ======
-local mainEvent = nil
-local reviveEvent = nil
+-- Создаём GUI который точно покажется
+local gui = Instance.new("ScreenGui")
+gui.Name = "ScriptLoaderTest"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Основной Remote (в Evade обычно Events.MainEvent)
-local function findMainEvent()
-    for _, folder in pairs({"Events", "Remotes"}) do
-        local f = RS:FindFirstChild(folder)
-        if f then
-            local ev = f:FindFirstChild("MainEvent") or f:FindFirstChild("MainRemote")
-            if ev then
-                return ev
-            end
-        end
-    end
-    return nil
-end
+-- Фон (чтобы точно было видно)
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 350, 0, 120)
+frame.Position = UDim2.new(0.5, -175, 0.5, -60)
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+frame.BorderSizePixel = 0
+frame.BackgroundTransparency = 0.3
+frame.Parent = gui
 
-mainEvent = findMainEvent()
+-- Версия скрипта (МЕНЯЙ ЭТО ЧИСЛО КАЖДЫЙ РАЗ)
+local VERSION = "1.0"
 
--- Отдельный Revive (если есть)
-local function findRevive()
-    for _, v in pairs(RS:GetDescendants()) do
-        if v:IsA("RemoteEvent") and v.Name == "Revive" then
-            return v
-        end
-    end
-    return nil
+-- Основной текст
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, 0, 1, 0)
+label.Position = UDim2.new(0, 0, 0, 0)
+label.BackgroundTransparency = 1
+label.Text = "✅ СКРИПТ ЗАГРУЖЕН!\nВерсия: " .. VERSION .. "\nВремя: " .. os.date("%H:%M:%S")
+label.TextColor3 = Color3.new(0, 1, 0)
+label.Font = Enum.Font.SourceSansBold
+label.TextSize = 22
+label.TextWrapped = true
+label.Parent = frame
+
+-- Кнопка закрыть
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 80, 0, 30)
+closeBtn.Position = UDim2.new(1, -85, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "ЗАКРЫТЬ"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = frame
+closeBtn.Activated:Connect(function()
+    gui:Destroy()
+end)
+
+-- Звуковой сигнал (если игра позволяет)
+task.spawn(function()
+    pcall(function()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://4590662766" -- звук уведомления
+        sound.Volume = 1
+        sound.Parent = player.Character or workspace
+        sound:Play()
+    end)
+end)
+
+print("СКРИПТ ЗАГРУЖЕН! Версия: " .. VERSION .. " Время: " .. os.date("%H:%M:%S"))    return nil
 end
 reviveEvent = findRevive()
 
