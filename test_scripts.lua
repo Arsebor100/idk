@@ -57,6 +57,29 @@ task.spawn(function()
     end)
 end)
 
+print("СКРИПТ ЗАГРУЖЕН! Версия: " .. VERSION .. " Время: " .. os.date("%H:%M:%S"))closeBtn.Position = UDim2.new(1, -85, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "ЗАКРЫТЬ"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = frame
+closeBtn.Activated:Connect(function()
+    gui:Destroy()
+end)
+
+-- Звуковой сигнал (если игра позволяет)
+task.spawn(function()
+    pcall(function()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://4590662766" -- звук уведомления
+        sound.Volume = 1
+        sound.Parent = player.Character or workspace
+        sound:Play()
+    end)
+end)
+
 print("СКРИПТ ЗАГРУЖЕН! Версия: " .. VERSION .. " Время: " .. os.date("%H:%M:%S"))    return nil
 end
 reviveEvent = findRevive()
