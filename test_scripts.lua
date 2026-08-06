@@ -1,40 +1,199 @@
 --[[
-    СКРИПТ ДЛЯ EVADE: TP GRAB + AUTO REVIVE + SPAWN POINT
-    Клавиша E – взять ближайшего игрока и вернуться с ним на место
+   EVADE: Кнопка захвата + авто-возрождение + возврат на точку
+   Работает через игровые RemoteEvent, подходит для Delta
 ]]
 
 local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local uis = game:GetService("UserInputService")
-local replicated = game:GetService("ReplicatedStorage")
-local savedCFrame = nil  -- место, откуда начали
+local RS = game:GetService("ReplicatedStorage")
+local savedPos = nil
 
--- Функция поиска удалённого события (Revive)
-local function getReviveRemote()
-    for _, v in pairs(replicated:GetDescendants()) do
+-- ====== ПОИСК НУЖНЫХ УДАЛЁННЫХ СОБЫТИЙ ======
+local mainEvent = nil
+local reviveEvent = nil
+
+-- Основной Remote (в Evade обычно Events.MainEvent)
+local function findMainEvent()
+    for _, folder in pairs({"Events", "Remotes"}) do
+        local f = RS:FindFirstChild(folder)
+        if f then
+            local ev = f:FindFirstChild("MainEvent") or f:FindFirstChild("MainRemote")
+            if ev then
+                return ev
+            end
+        end
+    end
+    return nil
+end
+
+mainEvent = findMainEvent()
+
+-- Отдельный Revive (если есть)
+local function findRevive()
+    for _, v in pairs(RS:GetDescendants()) do
         if v:IsA("RemoteEvent") and v.Name == "Revive" then
             return v
         end
     end
     return nil
 end
+reviveEvent = findRevive()
 
--- Автоматическое воскрешение (если упал)
+-- ====== АВТОМАТИЧЕСКОЕ ВОСКРЕШЕНИЕ ======
 task.spawn(function()
     while task.wait(0.5) do
         local char = player.Character
         if char then
             local hum = char:FindFirstChildWhichIsA("Humanoid")
-            if hum then
-                local state = hum:GetState()
-                -- если умер или лежит без сознания (Dead / Ragdoll)
-                if state == Enum.HumanoidStateType.Dead or
-                   (state == Enum.HumanoidStateType.Physics and hum.Sit) then
-                    local remote = getReviveRemote()
-                    if remote then
-                        remote:FireServer("Revive")
-                    else
-                        -- запасной вариант – полный респавн
+            if hum and hum.Health <= 0 then
+                -- Пытаемся оживить через Revive remote
+                if reviveEvent then
+                    reviveEvent:FireServer()
+                elseif mainEvent then
+                    mainEvent:FireServer("Revive")
+                end
+                -- Если не помогло, ждём, сервер сам реснет
+            end
+        end
+    end
+end)
+
+-- При респавне телепортируемся обратно на сохранённую точку
+player.CharacterAdded:Connect(function(char)
+    if savedPos then
+        task.wait(0.3) -- даём загрузиться
+        local root = char:WaitForChild("HumanoidRootPart")
+        -- Используем Remote для точного телепорта
+        if mainEvent then
+            mainEvent:FireServer("Teleport", savedPos) -- предположительный формат
+        else
+            root.CFrame = CFrame.new(savedPos) + Vector3.new(0, 3, 0)
+        end
+    end
+end)
+
+-- ====== ФУНКЦИЯ ЗАХВАТА ======
+local function grabNearest()
+    local myChar = player.Character
+    if not myChar then return end
+    local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+
+    -- Сохраняем позицию, куда вернёмся
+    savedPos = myRoot.Position
+
+    -- Ищем ближайшего живого игрока
+    local nearest = nil
+    local minDist = math.huge
+    for _, other in pairs(game.Players:GetPlayers()) do
+        if other ~= player and other.Character then
+            local otherRoot = other.Character:FindFirstChild("HumanoidRootPart")
+            local otherHum = other.Character:FindFirstChildWhichIsA("Humanoid")
+            if otherRoot and otherHum and otherHum.Health > 0 then
+                local dist = (myRoot.Position - otherRoot.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    nearest = other
+                end
+            end
+        end
+    end
+
+    if not nearest then return end
+
+    -- Телепортируем себя к цели (через Remote или напрямую)
+    local targetRoot = nearest.Character.HumanoidRootPart
+    local targetPos = targetRoot.Position
+
+    if mainEvent then
+        -- Пробуем функцию Bring или Teleport
+        mainEvent:FireServer("Bring", nearest.Name)  -- телепорт меня к игроку
+    else
+        myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
+    end
+
+    task.wait(0.2)
+
+    -- Возвращаемся вместе с целью на сохранённую точку
+    if mainEvent then
+        mainEvent:FireServer("BringBack", nearest.Name, savedPos) -- если есть
+        -- Если такой функции нет, просто телепортируем себя и игрока по отдельности
+        mainEvent:FireServer("Teleport", savedPos)  -- себя
+        task.wait(0.1)
+        -- Телепортируем цель
+        mainEvent:FireServer("TeleportPlayer", nearest.Name, savedPos)
+    else
+        -- Fallback: двигаем напрямую (может не сработать)
+        targetRoot.CFrame = CFrame.new(savedPos)
+        myRoot.CFrame = CFrame.new(savedPos)
+    end
+end
+
+-- ====== ИНТЕРФЕЙС (КНОПКА) ======
+local gui = Instance.new("ScreenGui")
+gui.Name = "EvadeGrabGUI"
+gui.ResetOnSpawn = false
+gui.Parent = (game:GetService("CoreGui") or player:WaitForChild("PlayerGui"))
+
+-- Кнопка захвата
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0, 120, 0, 50)
+btn.Position = UDim2.new(0, 20, 0, 20)  -- слева сверху
+btn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+btn.Text = "ЗАХВАТ"
+btn.TextColor3 = Color3.new(1,1,1)
+btn.Font = Enum.Font.SourceSansBold
+btn.TextSize = 18
+btn.BorderSizePixel = 0
+btn.AutoButtonColor = true
+btn.Parent = gui
+
+-- Надпись "Скрипт загружен"
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(0, 200, 0, 30)
+label.Position = UDim2.new(0, 20, 0, 80)
+label.BackgroundTransparency = 1
+label.Text = "✅ Скрипт загружен"
+label.TextColor3 = Color3.new(1,1,0)
+label.Font = Enum.Font.SourceSansBold
+label.TextSize = 16
+label.Parent = gui
+
+-- Исчезающая подсказка
+task.delay(5, function()
+    label:Destroy()
+end)
+
+-- Делаем кнопку перетаскиваемой (для удобства на эмуляторе)
+local UIS = game:GetService("UserInputService")
+local dragging = false
+local dragStart, startPos
+
+btn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = btn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+btn.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+        btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Нажатие (активация)
+btn.Activated:Connect(function()
+    grabNearest()
+end)
+
+print("Evade Grab скрипт готов. Используй кнопку ЗАХВАТ.")                        -- запасной вариант – полный респавн
                         player:LoadCharacter()
                     end
                 end
