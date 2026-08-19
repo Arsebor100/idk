@@ -1,77 +1,95 @@
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 
-local sizes = {
-	Vector3.new(2, 2, 2),
-	Vector3.new(4, 4, 4),
-	Vector3.new(6, 2, 6)
-}
-local materials = {
-	Enum.Material.Plastic,
-	Enum.Material.Neon,
-	Enum.Material.Wood,
-	Enum.Material.Grass
-}
+local CHAOS_RADIUS = 80
+local FLING_POWER = 180
+local isRunning = true
 
-local currentSize = 1
-local currentMaterial = 1
-local placedBlocks = {}
+local function flingPart(part)
+	if not part or not part.Parent then return end
+	if part:IsA("BasePart") then
+		part.Anchored = false
+		part.CanCollide = true
+		
+		local bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+		bv.Velocity = Vector3.new(
+			math.random(-FLING_POWER, FLING_POWER),
+			math.random(40, 120),
+			math.random(-FLING_POWER, FLING_POWER)
+		)
+		bv.Parent = part
+		game:GetService("Debris"):AddItem(bv, 0.4)
+	end
+end
 
-local function getPlacePosition()
+local function destroyJoints(character)
+	if not character then return end
+	for _, v in pairs(character:GetDescendants()) do
+		if v:IsA("Motor6D") or v:IsA("Weld") or v:IsA("WeldConstraint") then
+			v:Destroy()
+		end
+	end
+end
+
+local function chaosLoop()
 	local character = player.Character
 	if not character then return end
 	local hrp = character:FindFirstChild("HumanoidRootPart")
 	if not hrp then return end
-	
-	return hrp.CFrame.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 1, 0)
-end
 
-local function placeBlock()
-	local pos = getPlacePosition()
-	if not pos then return end
-	
-	local part = Instance.new("Part")
-	part.Size = sizes[currentSize]
-	part.Material = materials[currentMaterial]
-	part.Anchored = true
-	part.CanCollide = true
-	part.Color = Color3.fromRGB(math.random(80, 255), math.random(80, 255), math.random(80, 255))
-	part.Position = pos
-	part.Name = "MyBlock"
-	part.Parent = workspace
-	
-	table.insert(placedBlocks, part)
-	print("Блок поставлен")
-end
+	-- Хаос по частям карты
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and obj.Parent ~= character then
+			local dist = (obj.Position - hrp.Position).Magnitude
+			if dist < CHAOS_RADIUS and math.random() < 0.15 then
+				flingPart(obj)
+			end
+		end
+	end
 
-local function removeBlock()
-	local target = mouse.Target
-	if target and target.Name == "MyBlock" and target:IsA("BasePart") then
-		target:Destroy()
-		print("Блок удалён")
+	-- Хаос по игрокам
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			local otherHRP = plr.Character:FindFirstChild("HumanoidRootPart")
+			if otherHRP then
+				local dist = (otherHRP.Position - hrp.Position).Magnitude
+				if dist < CHAOS_RADIUS then
+					-- Разбираем на части
+					if math.random() < 0.25 then
+						destroyJoints(plr.Character)
+					end
+					-- Флингуем
+					if math.random() < 0.3 then
+						flingPart(otherHRP)
+					end
+				end
+			end
+		end
+	end
+
+	-- Себе тоже немного хаоса (чтобы было весело)
+	if math.random() < 0.08 then
+		flingPart(hrp)
 	end
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	
-	if input.KeyCode == Enum.KeyCode.Q then
-		placeBlock()
-	elseif input.KeyCode == Enum.KeyCode.E then
-		removeBlock()
-	elseif input.KeyCode == Enum.KeyCode.R then
-		currentSize = currentSize % #sizes + 1
-		print("Размер:", currentSize)
-	elseif input.KeyCode == Enum.KeyCode.F then
-		currentMaterial = currentMaterial % #materials + 1
-		print("Материал:", materials[currentMaterial].Name)
+-- Запуск
+local connection = RunService.Heartbeat:Connect(function()
+	if isRunning then
+		chaosLoop()
 	end
 end)
 
-print("Скрипт запущен")
-print("Q — поставить блок")
-print("E — удалить блок")
-print("R — сменить размер")
-print("F — сменить материал")
+-- Остановка
+getgenv().StopChaos = function()
+	isRunning = false
+	if connection then
+		connection:Disconnect()
+	end
+	print("Хаос выключен")
+end
+
+print("ПОЛНЫЙ ХАОС ЗАПУЩЕН")
+print("Чтобы выключить: StopChaos()")
