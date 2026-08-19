@@ -1,117 +1,77 @@
-local HttpService = game:GetService("HttpService")
-local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
+local mouse = player:GetMouse()
 
-local RAW_URL = "https://raw.githubusercontent.com/Arsebor100/idk/main/test_scripts.lua"
-local CHECK_INTERVAL = 1 -- каждую секунду
+local sizes = {
+	Vector3.new(2, 2, 2),
+	Vector3.new(4, 4, 4),
+	Vector3.new(6, 2, 6)
+}
+local materials = {
+	Enum.Material.Plastic,
+	Enum.Material.Neon,
+	Enum.Material.Wood,
+	Enum.Material.Grass
+}
 
-local lastContent = nil
-local isRunning = true
+local currentSize = 1
+local currentMaterial = 1
+local placedBlocks = {}
 
--- Функция загрузки новой версии
-local function loadNewVersion(content)
-	local success, err = pcall(function()
-		loadstring(content)()
-	end)
-	if success then
-		print("[Watcher] Новая версия успешно загружена")
-	else
-		warn("[Watcher] Ошибка при загрузке:", err)
+local function getPlacePosition()
+	local character = player.Character
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	
+	return hrp.CFrame.Position + hrp.CFrame.LookVector * 6 + Vector3.new(0, 1, 0)
+end
+
+local function placeBlock()
+	local pos = getPlacePosition()
+	if not pos then return end
+	
+	local part = Instance.new("Part")
+	part.Size = sizes[currentSize]
+	part.Material = materials[currentMaterial]
+	part.Anchored = true
+	part.CanCollide = true
+	part.Color = Color3.fromRGB(math.random(80, 255), math.random(80, 255), math.random(80, 255))
+	part.Position = pos
+	part.Name = "MyBlock"
+	part.Parent = workspace
+	
+	table.insert(placedBlocks, part)
+	print("Блок поставлен")
+end
+
+local function removeBlock()
+	local target = mouse.Target
+	if target and target.Name == "MyBlock" and target:IsA("BasePart") then
+		target:Destroy()
+		print("Блок удалён")
 	end
 end
 
--- Уведомление + кнопка
-local function notifyUpdate(newContent)
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = "Скрипт обновился!",
-			Text = "Нажми кнопку ниже чтобы загрузить",
-			Duration = 12
-		})
-	end)
-
-	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "ScriptUpdateNotify"
-	screenGui.ResetOnSpawn = false
-	screenGui.Parent = player:WaitForChild("PlayerGui")
-
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 280, 0, 90)
-	frame.Position = UDim2.new(0.5, -140, 0.15, 0)
-	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	frame.BorderSizePixel = 0
-	frame.Parent = screenGui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
-	corner.Parent = frame
-
-	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -20, 0, 30)
-	title.Position = UDim2.new(0, 10, 0, 8)
-	title.BackgroundTransparency = 1
-	title.Text = "Скрипт обновился!"
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextSize = 18
-	title.Font = Enum.Font.GothamBold
-	title.Parent = frame
-
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, -20, 0, 36)
-	button.Position = UDim2.new(0, 10, 0, 44)
-	button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-	button.Text = "Загрузить новую версию"
-	button.TextColor3 = Color3.fromRGB(255, 255, 255)
-	button.TextSize = 16
-	button.Font = Enum.Font.Gotham
-	button.Parent = frame
-
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(0, 8)
-	btnCorner.Parent = button
-
-	button.MouseButton1Click:Connect(function()
-		loadNewVersion(newContent)
-		screenGui:Destroy()
-	end)
-
-	task.delay(20, function()
-		if screenGui and screenGui.Parent then
-			screenGui:Destroy()
-		end
-	end)
-end
-
--- Основной цикл проверки
-task.spawn(function()
-	print("[Watcher] Запущен. Проверка каждую секунду...")
-
-	while isRunning do
-		local success, content = pcall(function()
-			return game:HttpGet(RAW_URL .. "?t=" .. tick())
-		end)
-
-		if success and content and content ~= "" then
-			if lastContent == nil then
-				lastContent = content
-				print("[Watcher] Первая версия сохранена")
-			elseif content ~= lastContent then
-				print("[Watcher] Обнаружено обновление!")
-				lastContent = content
-				notifyUpdate(content)
-			end
-		else
-			warn("[Watcher] Не удалось получить файл")
-		end
-
-		task.wait(CHECK_INTERVAL)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if input.KeyCode == Enum.KeyCode.Q then
+		placeBlock()
+	elseif input.KeyCode == Enum.KeyCode.E then
+		removeBlock()
+	elseif input.KeyCode == Enum.KeyCode.R then
+		currentSize = currentSize % #sizes + 1
+		print("Размер:", currentSize)
+	elseif input.KeyCode == Enum.KeyCode.F then
+		currentMaterial = currentMaterial % #materials + 1
+		print("Материал:", materials[currentMaterial].Name)
 	end
 end)
 
-getgenv().StopScriptWatcher = function()
-	isRunning = false
-	print("[Watcher] Остановлен")
-end
-
-print("[Watcher] Готов. Чтобы остановить: StopScriptWatcher()")
+print("Скрипт запущен")
+print("Q — поставить блок")
+print("E — удалить блок")
+print("R — сменить размер")
+print("F — сменить материал")
