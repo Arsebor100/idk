@@ -1,95 +1,122 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
-local CHAOS_RADIUS = 80
-local FLING_POWER = 180
-local isRunning = true
+-- ======================
+-- ВЫГРУЗКА ВСЕГО ЛИШНЕГО
+-- ======================
 
-local function flingPart(part)
-	if not part or not part.Parent then return end
-	if part:IsA("BasePart") then
-		part.Anchored = false
-		part.CanCollide = true
-		
-		local bv = Instance.new("BodyVelocity")
-		bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-		bv.Velocity = Vector3.new(
-			math.random(-FLING_POWER, FLING_POWER),
-			math.random(40, 120),
-			math.random(-FLING_POWER, FLING_POWER)
-		)
-		bv.Parent = part
-		game:GetService("Debris"):AddItem(bv, 0.4)
-	end
-end
+-- Останавливаем известные скрипты
+pcall(function() if getgenv().StopChaos then getgenv().StopChaos() end end)
+pcall(function() if getgenv().StopAura then getgenv().StopAura() end end)
 
-local function destroyJoints(character)
-	if not character then return end
-	for _, v in pairs(character:GetDescendants()) do
-		if v:IsA("Motor6D") or v:IsA("Weld") or v:IsA("WeldConstraint") then
+-- Удаляем инструменты Jerk и прочие
+local function clearTools(container)
+	if not container then return end
+	for _, v in pairs(container:GetChildren()) do
+		if v:IsA("Tool") and (v.Name:lower():find("jerk") or v.Name:lower():find("block")) then
 			v:Destroy()
 		end
 	end
 end
 
-local function chaosLoop()
-	local character = player.Character
-	if not character then return end
-	local hrp = character:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
+clearTools(player:FindFirstChild("Backpack"))
+clearTools(player.Character)
 
-	-- Хаос по частям карты
-	for _, obj in pairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and obj.Parent ~= character then
-			local dist = (obj.Position - hrp.Position).Magnitude
-			if dist < CHAOS_RADIUS and math.random() < 0.15 then
-				flingPart(obj)
-			end
-		end
-	end
-
-	-- Хаос по игрокам
-	for _, plr in pairs(Players:GetPlayers()) do
-		if plr ~= player and plr.Character then
-			local otherHRP = plr.Character:FindFirstChild("HumanoidRootPart")
-			if otherHRP then
-				local dist = (otherHRP.Position - hrp.Position).Magnitude
-				if dist < CHAOS_RADIUS then
-					-- Разбираем на части
-					if math.random() < 0.25 then
-						destroyJoints(plr.Character)
-					end
-					-- Флингуем
-					if math.random() < 0.3 then
-						flingPart(otherHRP)
-					end
-				end
-			end
-		end
-	end
-
-	-- Себе тоже немного хаоса (чтобы было весело)
-	if math.random() < 0.08 then
-		flingPart(hrp)
+-- Удаляем наши старые GUI
+for _, gui in pairs(player:WaitForChild("PlayerGui"):GetChildren()) do
+	if gui.Name == "ScriptUpdateNotify" or gui.Name == "ChaosGui" or gui.Name == "AuraGui" then
+		gui:Destroy()
 	end
 end
 
--- Запуск
-local connection = RunService.Heartbeat:Connect(function()
-	if isRunning then
-		chaosLoop()
+-- Чистим getgenv от старых флагов (кроме вотчера)
+local keep = {
+	StopScriptWatcher = true,
+	ScriptWatcherRunning = true
+}
+
+for k, v in pairs(getgenv()) do
+	if not keep[k] and (typeof(v) == "function" or typeof(v) == "boolean") then
+		if tostring(k):lower():find("chaos") or tostring(k):lower():find("aura") or tostring(k):lower():find("jerk") then
+			getgenv()[k] = nil
+		end
 	end
+end
+
+print("[CLEAN] Всё лишнее выгружено. Обновлялка оставлена.")
+
+-- ======================
+-- ПРОСТОЙ БРАУЗЕР
+-- ======================
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SimpleBrowser"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 320, 0, 280)
+main.Position = UDim2.new(0.5, -160, 0.5, -140)
+main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+main.BorderSizePixel = 0
+main.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = main
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 35)
+title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+title.Text = "Browser + Cleaner"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 16
+title.Font = Enum.Font.GothamBold
+title.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = title
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 2)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = main
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
 end)
 
--- Остановка
-getgenv().StopChaos = function()
-	isRunning = false
-	if connection then
-		connection:Disconnect()
-	end
-	print("Хаос выключен")
-end
+local info = Instance.new("TextLabel")
+info.Size = UDim2.new(1, -20, 0, 60)
+info.Position = UDim2.new(0, 10, 0, 50)
+info.BackgroundTransparency = 1
+info.Text = "Все лишние скрипты выгружены.\nОбновлялка (Watcher) оставлена работать.\n\nМожешь закрыть это окно."
+info.TextColor3 = Color3.fromRGB(200, 200, 200)
+info.TextSize = 14
+info.Font = Enum.Font.Gotham
+info.TextWrapped = true
+info.TextYAlignment = Enum.TextYAlignment.Top
+info.Parent = main
 
-print("ПОЛНЫЙ ХАОС ЗАПУЩЕН")
-print("Чтобы выключить: StopChaos()")
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -20, 0, 30)
+status.Position = UDim2.new(0, 10, 1, -40)
+status.BackgroundTransparency = 1
+status.Text = "Статус: Чисто"
+status.TextColor3 = Color3.fromRGB(0, 255, 120)
+status.TextSize = 14
+status.Font = Enum.Font.GothamBold
+status.Parent = main
+
+print("[Browser] Окно открыто")
